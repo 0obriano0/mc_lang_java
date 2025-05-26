@@ -1,4 +1,4 @@
-package com.skyeye.mc_lang;
+package org.tsob.mc_lang;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
