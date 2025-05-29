@@ -42,12 +42,94 @@ public class Update {
       System.out.println("處理版本: " + version);
 
       // 為每個版本建立一個資料夾，語言包將存放於此
-      String versionUnderscore = "Minecraft" + version.replace('.', '_');
-      Path langDir = currentPath.resolve("MCLang-" + versionUnderscore)
+      String versionUnderscore = version.replace('.', '_');
+      Path baseDir = currentPath.resolve("MCLang-Minecraft" + versionUnderscore);
+      Path langDir = baseDir
                 .resolve("resources")
                 .resolve("mc_lang")
                 .resolve(version);
       Files.createDirectories(langDir);
+
+      // 在 MCLang-Minecraft{versionUnderscore} 底下新增 pom.xml
+      Path pomPath = baseDir.resolve("pom.xml");
+      String pomContent = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
+              "        xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+              "        xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd\">\n" +
+              "    <parent>\n" +
+              "        <groupId>org.tsob</groupId>\n" +
+              "        <artifactId>MCLang-parent</artifactId>\n" +
+              "        <version>1.0.0</version>\n" +
+              "    </parent>\n" +
+              "\n" +
+              "    <modelVersion>4.0.0</modelVersion>\n" +
+              "    <artifactId>MCLang-Minecraft" + versionUnderscore + "</artifactId>\n" +
+              "    <packaging>jar</packaging>\n" +
+              "\n" +
+              "    <dependencies>\n" +
+              "        <dependency>\n" +
+              "            <groupId>org.tsob</groupId>\n" +
+              "            <artifactId>core</artifactId>\n" +
+              "            <version>${project.version}</version>\n" +
+              "        </dependency>\n" +
+              "    </dependencies>\n" +
+              "\n" +
+              "    <build>\n" +
+              "    <plugins>\n" +
+              "      <plugin>\n" +
+              "        <groupId>org.apache.maven.plugins</groupId>\n" +
+              "        <artifactId>maven-compiler-plugin</artifactId>\n" +
+              "        <version>3.10.1</version>\n" +
+              "        <configuration>\n" +
+              "          <source>1.8</source>\n" +
+              "          <target>1.8</target>\n" +
+              "        </configuration>\n" +
+              "      </plugin>\n" +
+              "      <plugin>\n" +
+              "        <artifactId>maven-assembly-plugin</artifactId>\n" +
+              "        <version>3.0.0</version>\n" +
+              "        <configuration>\n" +
+              "          <descriptorRefs>\n" +
+              "            <descriptorRef>jar-with-dependencies</descriptorRef>\n" +
+              "          </descriptorRefs>\n" +
+              "          <archive>\n" +
+              "            <manifest>\n" +
+              "              <addClasspath>true</addClasspath>\n" +
+              "            </manifest>\n" +
+              "          </archive>\n" +
+              "        </configuration>\n" +
+              "        <executions>\n" +
+              "          <execution>\n" +
+              "            <id>make-assembly</id>\n" +
+              "            <phase>package</phase>\n" +
+              "            <goals>\n" +
+              "              <goal>single</goal>\n" +
+              "            </goals>\n" +
+              "          </execution>\n" +
+              "        </executions>\n" +
+              "      </plugin>\n" +
+              "    </plugins>\n" +
+              "    <resources>\n" +
+              "      <resource>\n" +
+              "        <directory>resources</directory>\n" +
+              "        <includes>\n" +
+              "          <include>**/*.properties</include>\n" +
+              "          <include>**/*.yml</include>\n" +
+              "          <include>**/*.csv</include>\n" +
+              "          <include>**/*.txt</include>\n" +
+              "          <include>**/*.json</include>\n" +
+              "          <include>**/*.xml</include>\n" +
+              "        </includes>\n" +
+              "        <filtering>true</filtering>\n" +
+              "      </resource>\n" +
+              "    </resources>\n" +
+              "  </build>\n" +
+              "\n" +
+              "  <properties>\n" +
+              "    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n" +
+              "    <full.version>${project.version}</full.version>\n" +
+              "  </properties>\n" +
+              "</project>\n";
+      Files.writeString(pomPath, pomContent, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
       // 下載該版本的 client manifest
       String clientManifestUrl = v.get("url").asText();
