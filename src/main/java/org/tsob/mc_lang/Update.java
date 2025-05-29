@@ -12,17 +12,18 @@ import java.util.zip.ZipFile;
 
 public class Update {
   public static void main(String[] args) throws Exception {
+    // 取得目前工作目錄作為語言包存放根目錄
     Path currentPath = Paths.get("").toAbsolutePath();
     ObjectMapper mapper = new ObjectMapper();
     HttpClient client = HttpClient.newHttpClient();
 
-    // 下載 version_manifest_v2.json
+    // 下載 Minecraft 版本資訊清單
     String manifestUrl = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
     HttpRequest req = HttpRequest.newBuilder().uri(URI.create(manifestUrl)).build();
     HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
     JsonNode manifest = mapper.readTree(resp.body());
 
-    // 取得所有 >= 1.13 的版本
+    // 取得所有版本，並反轉順序（由舊到新）
     java.util.List<JsonNode> versions = new java.util.ArrayList<>();
     manifest.get("versions").forEach(versions::add);
     java.util.Collections.reverse(versions); // 反轉，變成舊到新
@@ -39,33 +40,40 @@ public class Update {
         continue;
 
       System.out.println("處理版本: " + version);
-      Path langDir = currentPath.resolve(version);
+
+      // 為每個版本建立一個資料夾，語言包將存放於此
+      String versionUnderscore = "Minecraft" + version.replace('.', '_');
+      Path langDir = currentPath.resolve("MCLang-" + versionUnderscore)
+                .resolve("resources")
+                .resolve("mc_lang")
+                .resolve(version);
       Files.createDirectories(langDir);
 
-      // 下載 client manifest
+      // 下載該版本的 client manifest
       String clientManifestUrl = v.get("url").asText();
       resp = client.send(HttpRequest.newBuilder().uri(URI.create(clientManifestUrl)).build(),
           HttpResponse.BodyHandlers.ofString());
       JsonNode clientManifest = mapper.readTree(resp.body());
 
-      // 下載 asset index
+      // 下載 asset index，取得語言檔案 hash
       String assetIndexUrl = clientManifest.get("assetIndex").get("url").asText();
       resp = client.send(HttpRequest.newBuilder().uri(URI.create(assetIndexUrl)).build(),
           HttpResponse.BodyHandlers.ofString());
       JsonNode assetIndex = mapper.readTree(resp.body()).get("objects");
 
-      // 下載 client.jar
+      // 下載 client.jar，準備解壓 en_us.json
       String clientJarUrl = clientManifest.get("downloads").get("client").get("url").asText();
       String clientSha1 = clientManifest.get("downloads").get("client").get("sha1").asText();
       Path clientJarPath = langDir.resolve("client.jar");
       downloadFile(clientJarUrl, clientJarPath);
+      // 驗證 client.jar 的 SHA1
       if (!sha1(clientJarPath).equalsIgnoreCase(clientSha1)) {
         System.out.println("client.jar SHA1 mismatch! " + version);
         Files.deleteIfExists(clientJarPath);
         continue;
       }
 
-      // 解壓 en_us.json
+      // 從 client.jar 解壓 en_us.json 語言檔
       try (ZipFile zip = new ZipFile(clientJarPath.toFile())) {
         ZipEntry entry = zip.getEntry("assets/minecraft/lang/en_us.json");
         if (entry != null) {
@@ -74,9 +82,10 @@ public class Update {
           }
         }
       }
+      // 刪除 client.jar，釋放空間
       Files.delete(clientJarPath);
 
-      // 下載其他語言檔
+      // 下載其他語言檔案
       String[] langList = {
           "zh_cn", "zh_hk", "zh_tw", "lzh", "ja_jp", "ko_kr", "vi_vn", "de_de",
           "es_es", "fr_fr", "it_it", "nl_nl", "pt_br", "ru_ru", "th_th", "uk_ua"
@@ -85,9 +94,11 @@ public class Update {
         String key = "minecraft/lang/" + lang + ".json";
         if (assetIndex.has(key)) {
           String hash = assetIndex.get(key).get("hash").asText();
+          // 組合語言檔案下載網址
           String url = "https://resources.download.minecraft.net/" + hash.substring(0, 2) + "/" + hash;
           Path outPath = langDir.resolve(lang + ".json");
           downloadFile(url, outPath);
+          // 驗證語言檔案 SHA1
           if (!sha1(outPath).equalsIgnoreCase(hash)) {
             System.out.println(lang + ".json SHA1 mismatch! " + version);
           }
@@ -97,6 +108,7 @@ public class Update {
     System.out.println("Done. Files are in version folders.");
   }
 
+  // 下載檔案到指定路徑
   static void downloadFile(String url, Path out) throws Exception {
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest req = HttpRequest.newBuilder().uri(URI.create(url)).build();
@@ -106,6 +118,7 @@ public class Update {
     }
   }
 
+  // 計算檔案 SHA1 值
   static String sha1(Path file) throws Exception {
     MessageDigest md = MessageDigest.getInstance("SHA-1");
     try (InputStream is = Files.newInputStream(file)) {
