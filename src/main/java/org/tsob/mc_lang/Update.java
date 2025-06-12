@@ -79,23 +79,6 @@ public class Update {
               "      </dependency>\n" +
               "  </dependencies>\n" +
               "\n" +
-              "  <build>\n" +
-              "    <resources>\n" +
-              "      <resource>\n" +
-              "        <directory>resources</directory>\n" +
-              "        <includes>\n" +
-              "          <include>**/*.properties</include>\n" +
-              "          <include>**/*.yml</include>\n" +
-              "          <include>**/*.csv</include>\n" +
-              "          <include>**/*.txt</include>\n" +
-              "          <include>**/*.json</include>\n" +
-              "          <include>**/*.xml</include>\n" +
-              "        </includes>\n" +
-              "        <filtering>true</filtering>\n" +
-              "      </resource>\n" +
-              "    </resources>\n" +
-              "  </build>\n" +
-              "\n" +
               "  <properties>\n" +
               "    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n" +
               "    <full.version>${project.version}</full.version>\n" +
