@@ -42,49 +42,10 @@ public class Update {
       System.out.println("處理版本: " + version);
 
       // 為每個版本建立一個資料夾，語言包將存放於此
-      String versionUnderscore = version.replace('.', '_');
-      Path baseDir = currentPath.resolve("MCLang-Minecraft" + versionUnderscore);
+      Path baseDir = currentPath.resolve("Local Language Pack");
       Path langDir = baseDir
-                .resolve("resources")
-                .resolve("mc_lang")
                 .resolve(version);
       Files.createDirectories(langDir);
-
-      // 在 MCLang-Minecraft{versionUnderscore} 底下新增 pom.xml
-      Path pomPath = baseDir.resolve("pom.xml");
-      String pomContent = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
-              "      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-              "      xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd\">\n" +
-              "  <parent>\n" +
-              "      <groupId>org.tsob</groupId>\n" +
-              "      <artifactId>MCLang</artifactId>\n" +
-              "      <version>1.0.7</version>\n" +
-              "  </parent>\n" +
-              "\n" +
-              "  <modelVersion>4.0.0</modelVersion>\n" +
-              "  <artifactId>MCLang-Minecraft" + versionUnderscore + "</artifactId>\n" +
-              "  <packaging>jar</packaging>\n" +
-              "\n" +
-              "  <dependencies>\n" +
-              "      <dependency>\n" +
-              "          <groupId>org.tsob</groupId>\n" +
-              "          <artifactId>MCLang-core</artifactId>\n" +
-              "          <version>${project.version}</version>\n" +
-              "      </dependency>\n" +
-              "\n" +
-              "      <dependency>\n" +
-              "          <groupId>org.tsob</groupId>\n" +
-              "          <artifactId>MCLang-API</artifactId>\n" +
-              "          <version>${project.version}</version>\n" +
-              "      </dependency>\n" +
-              "  </dependencies>\n" +
-              "\n" +
-              "  <properties>\n" +
-              "    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n" +
-              "    <full.version>${project.version}</full.version>\n" +
-              "  </properties>\n" +
-              "</project>\n";
-      Files.writeString(pomPath, pomContent, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
       // 下載該版本的 client manifest
       String clientManifestUrl = v.get("url").asText();
@@ -122,14 +83,31 @@ public class Update {
       // 刪除 client.jar，釋放空間
       Files.delete(clientJarPath);
 
-      // 下載其他語言檔案
-      String[] langList = {
-          "zh_cn", "zh_hk", "zh_tw", "lzh", "ja_jp", "ko_kr", "vi_vn", "de_de",
-          "es_es", "fr_fr", "it_it", "nl_nl", "pt_br", "ru_ru", "th_th", "uk_ua"
-      };
-      for (String lang : langList) {
-        String key = "minecraft/lang/" + lang + ".json";
-        if (assetIndex.has(key)) {
+      // // 下載其他語言檔案
+      // String[] langList = {
+      //     "zh_cn", "zh_hk", "zh_tw", "lzh", "ja_jp", "ko_kr", "vi_vn", "de_de",
+      //     "es_es", "fr_fr", "it_it", "nl_nl", "pt_br", "ru_ru", "th_th", "uk_ua"
+      // };
+      // for (String lang : langList) {
+      //   String key = "minecraft/lang/" + lang + ".json";
+      //   if (assetIndex.has(key)) {
+      //     String hash = assetIndex.get(key).get("hash").asText();
+      //     // 組合語言檔案下載網址
+      //     String url = "https://resources.download.minecraft.net/" + hash.substring(0, 2) + "/" + hash;
+      //     Path outPath = langDir.resolve(lang + ".json");
+      //     downloadFile(url, outPath);
+      //     // 驗證語言檔案 SHA1
+      //     if (!sha1(outPath).equalsIgnoreCase(hash)) {
+      //       System.out.println(lang + ".json SHA1 mismatch! " + version);
+      //     }
+      //   }
+      // }
+
+      // 下載所有語言檔案
+      for (java.util.Iterator<String> it = assetIndex.fieldNames(); it.hasNext(); ) {
+        String key = it.next();
+        if (key.startsWith("minecraft/lang/") && key.endsWith(".json")) {
+          String lang = key.substring("minecraft/lang/".length(), key.length() - ".json".length());
           String hash = assetIndex.get(key).get("hash").asText();
           // 組合語言檔案下載網址
           String url = "https://resources.download.minecraft.net/" + hash.substring(0, 2) + "/" + hash;
@@ -137,7 +115,7 @@ public class Update {
           downloadFile(url, outPath);
           // 驗證語言檔案 SHA1
           if (!sha1(outPath).equalsIgnoreCase(hash)) {
-            System.out.println(lang + ".json SHA1 mismatch! " + version);
+          System.out.println(lang + ".json SHA1 mismatch! " + version);
           }
         }
       }
