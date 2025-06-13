@@ -112,10 +112,15 @@ public class Update {
           // 組合語言檔案下載網址
           String url = "https://resources.download.minecraft.net/" + hash.substring(0, 2) + "/" + hash;
           Path outPath = langDir.resolve(lang + ".json");
+          // 檢查檔案是否已存在，存在就跳過下載
+          if (Files.exists(outPath)) {
+            System.out.println(lang + ".json 已存在，跳過下載 (" + version + ")");
+            continue;
+          }
           downloadFile(url, outPath);
           // 驗證語言檔案 SHA1
           if (!sha1(outPath).equalsIgnoreCase(hash)) {
-          System.out.println(lang + ".json SHA1 mismatch! " + version);
+            System.out.println(lang + ".json SHA1 mismatch! " + version);
           }
         }
       }
