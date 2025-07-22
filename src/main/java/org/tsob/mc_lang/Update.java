@@ -7,11 +7,21 @@ import java.net.URI;
 import java.net.http.*;
 import java.nio.file.*;
 import java.security.MessageDigest;
+import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Update {
   public static void main(String[] args) throws Exception {
+    // 詢問使用者從哪個版本開始下載
+    Scanner scanner = new Scanner(System.in);
+    System.out.print("請輸入起始版本 (例如: 1.13): ");
+    String startVersion = scanner.nextLine().trim();
+    if (startVersion.isEmpty()) {
+      startVersion = "1.13"; // 預設值
+    }
+    System.out.println("將從版本 " + startVersion + " 開始下載");
+
     // 取得目前工作目錄作為語言包存放根目錄
     Path currentPath = Paths.get("").toAbsolutePath();
     ObjectMapper mapper = new ObjectMapper();
@@ -31,8 +41,8 @@ public class Update {
     boolean startCollect = false;
     for (JsonNode v : versions) {
       String version = v.get("id").asText();
-      // 只處理 release 版本，且 >= 1.13
-      if (version.equals("1.13"))
+      // 只處理 release 版本，且 >= 使用者指定版本
+      if (version.equals(startVersion))
         startCollect = true;
       if (!startCollect)
         continue;
@@ -43,8 +53,7 @@ public class Update {
 
       // 為每個版本建立一個資料夾，語言包將存放於此
       Path baseDir = currentPath.resolve("Local Language Pack");
-      Path langDir = baseDir
-                .resolve(version);
+      Path langDir = baseDir.resolve(version);
       Files.createDirectories(langDir);
 
       // 下載該版本的 client manifest
@@ -125,6 +134,7 @@ public class Update {
         }
       }
     }
+    scanner.close();
     System.out.println("Done. Files are in version folders.");
   }
 
